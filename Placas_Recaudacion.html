@@ -193,7 +193,7 @@
         <div><label>Signo egresos</label>
           <select id="fSigno">
             <option value="abs">$1.000 (sin signo)</option>
-            <option value="menos">-$1.000</option>
+            <option value="menos" selected>-$1.000</option>
             <option value="par">($1.000)</option>
           </select>
         </div>
@@ -897,6 +897,22 @@ renderBloques(JSON.parse(JSON.stringify(BASE)));
 renderAsis(JSON.parse(JSON.stringify(BASE_ASIS)));
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
 draw(); renderHist();
+
+// Datos que llegan desde la app de tesorería (botón "Abrir en el generador"): vienen en el
+// #hash de la URL como JSON en base64url, así no hace falta copiar y pegar. El hash no viaja
+// al servidor y se borra de la barra apenas se lee.
+(function importarDesdeHash(){
+  const m = location.hash.match(/[#&]datos=([^&]+)/);
+  if(!m) return;
+  history.replaceState(null, "", location.pathname + location.search);
+  try{
+    const b64 = m[1].replace(/-/g,"+").replace(/_/g,"/");
+    const bin = atob(b64 + "===".slice((b64.length+3)%4));
+    const json = new TextDecoder().decode(Uint8Array.from(bin, c=>c.charCodeAt(0)));
+    JSON.parse(json);
+    $("#fJson").value = json; $("#btnImport").click();
+  }catch(e){ alert("No se pudieron leer los datos de la fecha. Copiá el JSON desde la app y pegalo en Importar."); }
+})();
 </script>
 </body>
 </html>
