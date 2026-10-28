@@ -295,7 +295,7 @@ function rowHTML(it){
   return `<div class="row">
     <button class="sg${neg?" neg":""}" title="Ingreso / egreso">${neg?"−":"+"}</button>
     <input class="c" type="text" list="sugC" value="${esc(it.c)}" placeholder="Concepto">
-    <input class="m" type="text" value="${it.m?Math.abs(it.m).toLocaleString("es-AR"):""}" placeholder="0">
+    <input class="m" type="text" value="${it.m?Math.abs(it.m).toLocaleString("es-AR"):(it.cero?"0":"")}" placeholder="0">
     <input class="g" type="text" value="${esc(it.g||"")}" placeholder="grupo (opc.)">
     <button class="del" title="Quitar renglón">×</button>
   </div>`;
@@ -324,7 +324,9 @@ function readBloques(){
       c: r.querySelector(".c").value.trim(),
       m: num(r.querySelector(".m").value) * (r.querySelector(".sg").classList.contains("neg")?-1:1),
       g: r.querySelector(".g").value.trim(),
-      neg: r.querySelector(".sg").classList.contains("neg")
+      neg: r.querySelector(".sg").classList.contains("neg"),
+      // un "0" escrito a propósito se muestra en la placa ($0); vacío = renglón oculto
+      cero: r.querySelector(".m").value.trim()!=="" && num(r.querySelector(".m").value)===0
     }))
   }));
 }
@@ -387,13 +389,13 @@ function lineas(items){
   const out = [], idx = {};
   for(const it of vis){
     if(it.g){
-      if(idx[it.g] === undefined){ idx[it.g] = out.length; out.push({c:it.g, m:it.m}); }
-      else out[idx[it.g]].m += it.m;
-    } else if(it.m){
-      out.push({c:it.c, m:it.m});
+      if(idx[it.g] === undefined){ idx[it.g] = out.length; out.push({c:it.g, m:it.m, cero:!!it.cero}); }
+      else { out[idx[it.g]].m += it.m; out[idx[it.g]].cero = out[idx[it.g]].cero || !!it.cero; }
+    } else if(it.m || it.cero){
+      out.push({c:it.c, m:it.m, cero:!!it.cero});
     }
   }
-  return out.filter(l=>l.m);
+  return out.filter(l=>l.m || l.cero);
 }
 
 /* ---------------- canvas ---------------- */
@@ -839,7 +841,7 @@ $("#btnImport").onclick = ()=>{
     if(Array.isArray(d.asistencia)) renderAsis(d.asistencia.map(a=>({c:a.c||"", n:+a.n||0})));
     if(Array.isArray(d.bloques)) renderBloques(d.bloques.map(b=>({
       nombre:b.nombre||"", neto:b.neto||"NETO",
-      items:(b.items||[]).map(it=>({c:it.c||"",m:+it.m||0,g:it.g||"",neg:it.neg}))
+      items:(b.items||[]).map(it=>({c:it.c||"",m:+it.m||0,g:it.g||"",neg:it.neg,cero:!!it.cero}))
     })));
     draw();
   }catch(e){ alert("JSON inválido: "+e.message); }
